@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
-  const { invest_account_id, symbol, name, quantity, avg_cost, current_price, currency, note } = await req.json();
+  const { invest_account_id, symbol, name, quantity, avg_cost, current_price, currency, note, purchase_date } = await req.json();
   if (!invest_account_id || !symbol || !name) {
     return NextResponse.json({ error: "缺少必填欄位" }, { status: 400 });
   }
@@ -46,9 +46,9 @@ export async function POST(req: Request) {
 
   const id = uuid();
   db.prepare(`
-    INSERT INTO holdings (id, invest_account_id, symbol, name, quantity, avg_cost, current_price, currency, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, invest_account_id, symbol, name, quantity || 0, avg_cost || 0, current_price || 0, currency || "TWD", note || "");
+    INSERT INTO holdings (id, invest_account_id, symbol, name, quantity, avg_cost, current_price, currency, note, purchase_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, invest_account_id, symbol, name, quantity || 0, avg_cost || 0, current_price || 0, currency || "TWD", note || "", purchase_date || null);
 
   return NextResponse.json({ id });
 }

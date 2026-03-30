@@ -186,6 +186,7 @@ function initSchema(db: Database.Database) {
   try { db.exec("ALTER TABLE transactions ADD COLUMN title TEXT DEFAULT ''"); } catch {}
   try { db.exec("ALTER TABLE recurring ADD COLUMN title TEXT DEFAULT ''"); } catch {}
   try { db.exec("ALTER TABLE transactions ADD COLUMN bank_account_id TEXT"); } catch {}
+  try { db.exec("ALTER TABLE holdings ADD COLUMN purchase_date TEXT"); } catch {}
 
   const count = db.prepare("SELECT COUNT(*) as c FROM categories").get() as { c: number };
   if (count.c === 0) seedCategories(db);
