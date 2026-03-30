@@ -18,6 +18,7 @@ export const useApp = () => useContext(AppContext)!;
 const NAV = [
   { href: "/dashboard", label: "總覽", icon: "🏠", activeIcon: "🏡" },
   { href: "/transactions", label: "記帳", icon: "✏️", activeIcon: "📝" },
+  { href: "/recurring", label: "固定", icon: "🔄", activeIcon: "🔁" },
   { href: "/compare", label: "比較", icon: "📊", activeIcon: "📈" },
   { href: "/accounts", label: "帳戶", icon: "😊", activeIcon: "😎" },
 ];

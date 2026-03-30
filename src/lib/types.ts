@@ -41,6 +41,22 @@ export interface Transaction {
   group_name?: string;
 }
 
+export interface Recurring {
+  id: string;
+  account_id: string;
+  category_id: string;
+  direction: Direction;
+  amount: number;
+  note: string;
+  day_of_month: number;
+  active: number;
+  created_at: string;
+  // joined
+  category_name?: string;
+  category_icon?: string;
+  group_name?: string;
+}
+
 export interface PeriodSummary {
   period: string;
   label: string;

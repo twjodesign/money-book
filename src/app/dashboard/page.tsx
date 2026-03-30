@@ -27,9 +27,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!currentAccount) return;
-    fetch(`/api/dashboard?accountId=${currentAccount.id}`)
-      .then((r) => r.json())
-      .then(setData);
+    // 自動產生當月固定收支，再載入 dashboard
+    fetch("/api/recurring/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account_id: currentAccount.id }),
+    }).finally(() => {
+      fetch(`/api/dashboard?accountId=${currentAccount.id}`)
+        .then((r) => r.json())
+        .then(setData);
+    });
   }, [currentAccount]);
 
   if (!data) {

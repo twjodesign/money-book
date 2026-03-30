@@ -63,11 +63,35 @@ function initSchema(db: Database.Database) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- 固定收支（每月自動）
+    CREATE TABLE IF NOT EXISTS recurring (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES accounts(id),
+      category_id TEXT NOT NULL REFERENCES categories(id),
+      direction TEXT NOT NULL CHECK(direction IN ('income', 'expense')),
+      amount REAL NOT NULL,
+      note TEXT,
+      day_of_month INTEGER NOT NULL DEFAULT 1,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- 固定收支產生紀錄（避免重複產生）
+    CREATE TABLE IF NOT EXISTS recurring_log (
+      id TEXT PRIMARY KEY,
+      recurring_id TEXT NOT NULL REFERENCES recurring(id),
+      month TEXT NOT NULL,
+      transaction_id TEXT NOT NULL REFERENCES transactions(id),
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     -- 索引
     CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
     CREATE INDEX IF NOT EXISTS idx_transactions_account_date ON transactions(account_id, date);
     CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);
+    CREATE INDEX IF NOT EXISTS idx_recurring_account ON recurring(account_id);
+    CREATE INDEX IF NOT EXISTS idx_recurring_log_month ON recurring_log(recurring_id, month);
   `);
 
   // 初始化分類（如果空的）
