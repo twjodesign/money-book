@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
-  const { account_id, category_id, direction, amount, note, date } = await req.json();
+  const { account_id, category_id, direction, amount, title, note, date } = await req.json();
   if (!account_id || !category_id || !direction || !amount || !date) {
     return NextResponse.json({ error: "缺少必填欄位" }, { status: 400 });
   }
@@ -54,8 +54,8 @@ export async function POST(req: Request) {
 
   const id = uuid();
   db.prepare(
-    "INSERT INTO transactions (id, account_id, category_id, direction, amount, note, date) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, account_id, category_id, direction, amount, note || "", date);
+    "INSERT INTO transactions (id, account_id, category_id, direction, amount, title, note, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(id, account_id, category_id, direction, amount, title || "", note || "", date);
 
   return NextResponse.json({ id });
 }

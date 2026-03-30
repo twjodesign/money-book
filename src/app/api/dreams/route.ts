@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 
-// 列出固定收支
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -17,23 +16,23 @@ export async function GET(req: Request) {
   if (!account) return NextResponse.json({ error: "帳戶不存在" }, { status: 404 });
 
   const items = db.prepare(`
-    SELECT r.*, c.name as category_name, c.icon as category_icon, c.group_name
-    FROM recurring r
-    JOIN categories c ON r.category_id = c.id
-    WHERE r.account_id = ?
-    ORDER BY r.direction, r.day_of_month
+    SELECT d.*,
+      (SELECT COUNT(*) FROM dream_deposits dd WHERE dd.dream_id = d.id) as deposit_count,
+      (SELECT COALESCE(SUM(dd.amount), 0) FROM dream_deposits dd WHERE dd.dream_id = d.id) as deposit_sum
+    FROM dreams d
+    WHERE d.account_id = ?
+    ORDER BY d.created_at
   `).all(accountId);
 
   return NextResponse.json(items);
 }
 
-// 新增固定收支
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
-  const { account_id, category_id, direction, amount, title, note, day_of_month } = await req.json();
-  if (!account_id || !category_id || !direction || !amount) {
+  const { account_id, name, icon, target_amount, target_date, category, note } = await req.json();
+  if (!account_id || !name) {
     return NextResponse.json({ error: "缺少必填欄位" }, { status: 400 });
   }
 
@@ -42,14 +41,14 @@ export async function POST(req: Request) {
   if (!account) return NextResponse.json({ error: "帳戶不存在" }, { status: 404 });
 
   const id = uuid();
-  db.prepare(
-    "INSERT INTO recurring (id, account_id, category_id, direction, amount, title, note, day_of_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, account_id, category_id, direction, amount, title || "", note || "", day_of_month || 1);
+  db.prepare(`
+    INSERT INTO dreams (id, account_id, name, icon, target_amount, target_date, category, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, account_id, name, icon || "✨", target_amount || 0, target_date || null, category || "other", note || "");
 
   return NextResponse.json({ id });
 }
 
-// 刪除固定收支
 export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -60,13 +59,17 @@ export async function DELETE(req: Request) {
 
   const db = getDb();
   const item = db.prepare(`
-    SELECT r.id FROM recurring r
-    JOIN accounts a ON r.account_id = a.id
-    WHERE r.id = ? AND a.user_id = ?
+    SELECT d.id FROM dreams d
+    JOIN accounts a ON d.account_id = a.id
+    WHERE d.id = ? AND a.user_id = ?
   `).get(id, session.userId);
   if (!item) return NextResponse.json({ error: "不存在" }, { status: 404 });
 
-  db.prepare("DELETE FROM recurring_log WHERE recurring_id = ?").run(id);
-  db.prepare("DELETE FROM recurring WHERE id = ?").run(id);
+  const del = db.transaction(() => {
+    db.prepare("DELETE FROM dream_deposits WHERE dream_id = ?").run(id);
+    db.prepare("DELETE FROM dreams WHERE id = ?").run(id);
+  });
+  del();
+
   return NextResponse.json({ ok: true });
 }

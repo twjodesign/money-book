@@ -68,6 +68,46 @@ export async function GET(req: Request) {
     LIMIT 10
   `).all(accountId);
 
+  // === 資產總覽 ===
+
+  // 銀行帳戶
+  const bankAccounts = db.prepare(
+    "SELECT name, bank_name, balance, icon FROM bank_accounts WHERE account_id = ? ORDER BY sort_order"
+  ).all(accountId) as { name: string; bank_name: string; balance: number; icon: string }[];
+  const totalCash = bankAccounts.reduce((s, b) => s + b.balance, 0);
+
+  // 投資
+  const investAccounts = db.prepare(`
+    SELECT ia.id, ia.name, ia.type,
+      COALESCE(SUM(h.quantity * h.avg_cost), 0) as total_cost,
+      COALESCE(SUM(h.quantity * h.current_price), 0) as total_value
+    FROM invest_accounts ia
+    LEFT JOIN holdings h ON h.invest_account_id = ia.id
+    WHERE ia.account_id = ?
+    GROUP BY ia.id
+  `).all(accountId) as { id: string; name: string; type: string; total_cost: number; total_value: number }[];
+  const totalInvestCost = investAccounts.reduce((s, a) => s + a.total_cost, 0);
+  const totalInvestValue = investAccounts.reduce((s, a) => s + a.total_value, 0);
+
+  // 房地產
+  const properties = db.prepare(
+    "SELECT name, market_value, cash_paid, loan_amount, monthly_payment, monthly_rent, purpose FROM properties WHERE account_id = ?"
+  ).all(accountId) as { name: string; market_value: number; cash_paid: number; loan_amount: number; monthly_payment: number; monthly_rent: number; purpose: string }[];
+  const totalPropertyValue = properties.reduce((s, p) => s + p.market_value, 0);
+  const totalPropertyEquity = properties.reduce((s, p) => s + p.cash_paid, 0);
+  const totalLoan = properties.reduce((s, p) => s + p.loan_amount, 0);
+  const totalPropertyCashFlow = properties.reduce((s, p) => s + p.monthly_rent - p.monthly_payment, 0);
+
+  // 夢想儲蓄
+  const dreams = db.prepare(
+    "SELECT name, icon, target_amount, current_amount, category FROM dreams WHERE account_id = ?"
+  ).all(accountId) as { name: string; icon: string; target_amount: number; current_amount: number; category: string }[];
+  const totalDreamTarget = dreams.reduce((s, d) => s + d.target_amount, 0);
+  const totalDreamSaved = dreams.reduce((s, d) => s + d.current_amount, 0);
+
+  // 總資產 = 現金 + 投資市值 + 房產淨值
+  const totalAssets = totalCash + totalInvestValue + totalPropertyEquity;
+
   return NextResponse.json({
     monthIncome,
     monthExpense,
@@ -75,5 +115,13 @@ export async function GET(req: Request) {
     topExpenses,
     months,
     recent,
+    // 資產總覽
+    assets: {
+      totalAssets,
+      cash: { total: totalCash, accounts: bankAccounts },
+      invest: { cost: totalInvestCost, value: totalInvestValue, accounts: investAccounts },
+      property: { value: totalPropertyValue, equity: totalPropertyEquity, loan: totalLoan, cashFlow: totalPropertyCashFlow, items: properties },
+      dreams: { target: totalDreamTarget, saved: totalDreamSaved, items: dreams },
+    },
   });
 }

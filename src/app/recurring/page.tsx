@@ -15,6 +15,7 @@ export default function RecurringPage() {
   const [showForm, setShowForm] = useState(false);
   const [direction, setDirection] = useState<"expense" | "income">("income");
   const [categoryId, setCategoryId] = useState("");
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [dayOfMonth, setDayOfMonth] = useState("1");
@@ -44,7 +45,7 @@ export default function RecurringPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || !categoryId || !currentAccount) return;
+    if (!title || !amount || !categoryId || !currentAccount) return;
     setSaving(true);
 
     await fetch("/api/recurring", {
@@ -54,12 +55,14 @@ export default function RecurringPage() {
         account_id: currentAccount.id,
         category_id: categoryId,
         direction,
+        title,
         amount: parseFloat(amount),
         note,
         day_of_month: parseInt(dayOfMonth),
       }),
     });
 
+    setTitle("");
     setAmount("");
     setNote("");
     setSaving(false);
@@ -184,6 +187,17 @@ export default function RecurringPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] font-semibold mb-1">✏️ 名稱</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="台新銀行月薪、Netflix 家庭方案..."
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-[var(--text-muted)] font-semibold mb-1">💵 金額</label>
@@ -218,9 +232,9 @@ export default function RecurringPage() {
                     {item.category_icon}
                   </div>
                   <div>
-                    <p className="text-sm font-bold">{item.category_name}</p>
+                    <p className="text-sm font-bold">{item.title || item.category_name}</p>
                     <p className="text-[10px] text-[var(--text-muted)]">
-                      每月 {item.day_of_month} 號 {item.note && `· ${item.note}`}
+                      {item.title ? item.category_name + " · " : ""}每月 {item.day_of_month} 號{item.note && ` · ${item.note}`}
                     </p>
                   </div>
                 </div>
@@ -248,9 +262,9 @@ export default function RecurringPage() {
                     {item.category_icon}
                   </div>
                   <div>
-                    <p className="text-sm font-bold">{item.category_name}</p>
+                    <p className="text-sm font-bold">{item.title || item.category_name}</p>
                     <p className="text-[10px] text-[var(--text-muted)]">
-                      每月 {item.day_of_month} 號 {item.note && `· ${item.note}`}
+                      {item.title ? item.category_name + " · " : ""}每月 {item.day_of_month} 號{item.note && ` · ${item.note}`}
                     </p>
                   </div>
                 </div>

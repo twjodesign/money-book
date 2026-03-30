@@ -153,3 +153,7 @@ button:active {
   background: linear-gradient(90deg, #f5a0b8, var(--red));
   border-radius: 99px;
 }
+
+/* Hide scrollbar for mobile tab bar */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

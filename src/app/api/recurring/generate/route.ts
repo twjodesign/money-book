@@ -23,13 +23,13 @@ export async function POST(req: Request) {
     "SELECT * FROM recurring WHERE account_id = ? AND active = 1"
   ).all(account_id) as {
     id: string; category_id: string; direction: string;
-    amount: number; note: string; day_of_month: number;
+    amount: number; title: string; note: string; day_of_month: number;
   }[];
 
   let generated = 0;
 
   const insertTx = db.prepare(
-    "INSERT INTO transactions (id, account_id, category_id, direction, amount, note, date) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO transactions (id, account_id, category_id, direction, amount, title, note, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   );
   const insertLog = db.prepare(
     "INSERT INTO recurring_log (id, recurring_id, month, transaction_id) VALUES (?, ?, ?, ?)"
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       const day = Math.min(item.day_of_month, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
       const date = `${currentMonth}-${String(day).padStart(2, "0")}`;
 
-      insertTx.run(txId, account_id, item.category_id, item.direction, item.amount, `[固定] ${item.note}`, date);
+      insertTx.run(txId, account_id, item.category_id, item.direction, item.amount, item.title || "", `[固定] ${item.note}`, date);
       insertLog.run(uuid(), item.id, currentMonth, txId);
       generated++;
     }

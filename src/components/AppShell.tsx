@@ -19,8 +19,12 @@ const NAV = [
   { href: "/dashboard", label: "總覽", icon: "🏠", activeIcon: "🏡" },
   { href: "/transactions", label: "記帳", icon: "✏️", activeIcon: "📝" },
   { href: "/recurring", label: "固定", icon: "🔄", activeIcon: "🔁" },
-  { href: "/compare", label: "比較", icon: "📊", activeIcon: "📈" },
-  { href: "/accounts", label: "帳戶", icon: "😊", activeIcon: "😎" },
+  { href: "/bank-accounts", label: "銀行", icon: "🏦", activeIcon: "💳" },
+  { href: "/properties", label: "房產", icon: "🏠", activeIcon: "🏡" },
+  { href: "/investments", label: "投資", icon: "📈", activeIcon: "💹" },
+  { href: "/dreams", label: "夢想", icon: "✨", activeIcon: "🌟" },
+  { href: "/compare", label: "比較", icon: "📊", activeIcon: "📉" },
+  { href: "/accounts", label: "設定", icon: "⚙️", activeIcon: "🔧" },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -162,8 +166,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Main */}
         <main className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">{children}</main>
 
-        {/* Mobile bottom tab bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t-2 border-[var(--border)] flex z-30">
+        {/* Mobile bottom tab bar — scrollable */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t-2 border-[var(--border)] flex overflow-x-auto z-30 scrollbar-hide">
           {NAV.map((item) => {
             const active = pathname === item.href;
             return (

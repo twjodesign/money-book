@@ -32,6 +32,7 @@ export interface Transaction {
   category_id: string;
   direction: Direction;
   amount: number;
+  title?: string;
   note: string;
   date: string;
   created_at: string;
@@ -47,6 +48,7 @@ export interface Recurring {
   category_id: string;
   direction: Direction;
   amount: number;
+  title?: string;
   note: string;
   day_of_month: number;
   active: number;

@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { v4 as uuid } from "uuid";
 
-// 列出固定收支
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -16,24 +15,23 @@ export async function GET(req: Request) {
   const account = db.prepare("SELECT id FROM accounts WHERE id = ? AND user_id = ?").get(accountId, session.userId);
   if (!account) return NextResponse.json({ error: "帳戶不存在" }, { status: 404 });
 
-  const items = db.prepare(`
-    SELECT r.*, c.name as category_name, c.icon as category_icon, c.group_name
-    FROM recurring r
-    JOIN categories c ON r.category_id = c.id
-    WHERE r.account_id = ?
-    ORDER BY r.direction, r.day_of_month
-  `).all(accountId);
+  const items = db.prepare(
+    "SELECT * FROM properties WHERE account_id = ? ORDER BY created_at"
+  ).all(accountId);
 
   return NextResponse.json(items);
 }
 
-// 新增固定收支
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
-  const { account_id, category_id, direction, amount, title, note, day_of_month } = await req.json();
-  if (!account_id || !category_id || !direction || !amount) {
+  const {
+    account_id, name, address, purpose, market_value, cash_paid,
+    loan_amount, loan_rate, loan_remaining_months, monthly_payment, monthly_rent, note
+  } = await req.json();
+
+  if (!account_id || !name) {
     return NextResponse.json({ error: "缺少必填欄位" }, { status: 400 });
   }
 
@@ -42,14 +40,19 @@ export async function POST(req: Request) {
   if (!account) return NextResponse.json({ error: "帳戶不存在" }, { status: 404 });
 
   const id = uuid();
-  db.prepare(
-    "INSERT INTO recurring (id, account_id, category_id, direction, amount, title, note, day_of_month) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, account_id, category_id, direction, amount, title || "", note || "", day_of_month || 1);
+  db.prepare(`
+    INSERT INTO properties (id, account_id, name, address, purpose, market_value, cash_paid,
+      loan_amount, loan_rate, loan_remaining_months, monthly_payment, monthly_rent, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, account_id, name, address || "", purpose || "self",
+    market_value || 0, cash_paid || 0, loan_amount || 0, loan_rate || 0,
+    loan_remaining_months || 0, monthly_payment || 0, monthly_rent || 0, note || ""
+  );
 
   return NextResponse.json({ id });
 }
 
-// 刪除固定收支
 export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登入" }, { status: 401 });
@@ -60,13 +63,12 @@ export async function DELETE(req: Request) {
 
   const db = getDb();
   const item = db.prepare(`
-    SELECT r.id FROM recurring r
-    JOIN accounts a ON r.account_id = a.id
-    WHERE r.id = ? AND a.user_id = ?
+    SELECT p.id FROM properties p
+    JOIN accounts a ON p.account_id = a.id
+    WHERE p.id = ? AND a.user_id = ?
   `).get(id, session.userId);
   if (!item) return NextResponse.json({ error: "不存在" }, { status: 404 });
 
-  db.prepare("DELETE FROM recurring_log WHERE recurring_id = ?").run(id);
-  db.prepare("DELETE FROM recurring WHERE id = ?").run(id);
+  db.prepare("DELETE FROM properties WHERE id = ?").run(id);
   return NextResponse.json({ ok: true });
 }

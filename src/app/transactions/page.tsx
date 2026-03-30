@@ -14,6 +14,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [direction, setDirection] = useState<"expense" | "income">("expense");
   const [categoryId, setCategoryId] = useState("");
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -53,7 +54,7 @@ export default function TransactionsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || !categoryId || !currentAccount) return;
+    if (!title || !amount || !categoryId || !currentAccount) return;
     setSaving(true);
 
     await fetch("/api/transactions", {
@@ -63,12 +64,14 @@ export default function TransactionsPage() {
         account_id: currentAccount.id,
         category_id: categoryId,
         direction,
+        title,
         amount: parseFloat(amount),
         note,
         date,
       }),
     });
 
+    setTitle("");
     setAmount("");
     setNote("");
     setSaving(false);
@@ -152,6 +155,17 @@ export default function TransactionsPage() {
             </div>
           </div>
 
+          <div>
+            <label className="block text-xs text-[var(--text-muted)] font-semibold mb-1">✏️ 名稱</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="台新銀行月薪、Netflix 家庭方案..."
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-[var(--text-muted)] font-semibold mb-1">💵 金額</label>
@@ -215,9 +229,9 @@ export default function TransactionsPage() {
                   {tx.category_icon}
                 </div>
                 <div>
-                  <p className="text-sm font-bold">{tx.category_name}</p>
+                  <p className="text-sm font-bold">{tx.title || tx.category_name}</p>
                   <p className="text-[10px] text-[var(--text-muted)]">
-                    {tx.date.slice(5).replace("-", "/")} {tx.note && `· ${tx.note}`}
+                    {tx.title ? tx.category_name + " · " : ""}{tx.date.slice(5).replace("-", "/")}{tx.note && ` · ${tx.note}`}
                   </p>
                 </div>
               </div>
